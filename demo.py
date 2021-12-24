@@ -9,6 +9,7 @@ from prefect import task, Flow
 from prefect.tasks.database.sqlite import SQLiteScript
 from prefect.schedules import IntervalSchedule
 from prefect.engine import signals
+from prefect.engine.results.local_result import LocalResult
 
 
 # state handler
@@ -25,7 +26,7 @@ create_table = SQLiteScript(
 
 
 # extract
-@task(cache_for=datetime.timedelta(days=1), state_handlers=[alert_failed])
+@task(cache_for=datetime.timedelta(days=1), state_handlers=[alert_failed], result=LocalResult())
 def get_complaint_data():
     r = requests.get('https://www.consumerfinance.gov/data-research/consumer-complaints/search/api/v1/',
                      params={'size': 100})
@@ -37,8 +38,6 @@ def get_complaint_data():
 # transform
 @task(state_handlers=[alert_failed])
 def parse_complaint_data(raw):
-    # raise Exception
-    raise signals.FAIL
     complaints = []
     Complaint = namedtuple('Complaint', ['date_received', 'state', 'product', 'company', 'complaint_what_happened'])
     for row in raw:
