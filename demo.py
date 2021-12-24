@@ -9,6 +9,13 @@ from prefect import task, Flow
 from prefect.tasks.database.sqlite import SQLiteScript
 from prefect.schedules import IntervalSchedule
 
+
+# state handler
+def alert_failed(obj, old_state, new_state):
+    if new_state.is_failed():
+        print('Failed!')
+
+
 # setup
 create_table = SQLiteScript(
     db='cfpbcomplaints.db',
@@ -17,7 +24,7 @@ create_table = SQLiteScript(
 
 
 # extract
-@task(cache_for=datetime.timedelta(days=1))
+@task(cache_for=datetime.timedelta(days=1), state_handlers=[alert_failed])
 def get_complaint_data():
     r = requests.get('https://www.consumerfinance.gov/data-research/consumer-complaints/search/api/v1/',
                      params={'size': 100})
@@ -27,8 +34,9 @@ def get_complaint_data():
 
 
 # transform
-@task
+@task(state_handlers=[alert_failed])
 def parse_complaint_data(raw):
+    raise Exception
     complaints = []
     Complaint = namedtuple('Complaint', ['date_received', 'state', 'product', 'company', 'complaint_what_happened'])
     for row in raw:
@@ -45,7 +53,7 @@ def parse_complaint_data(raw):
 
 
 # load
-@task
+@task(state_handlers=[alert_failed])
 def store_complaints(parsed):
     insert_cmd = 'INSERT INTO complaint VALUES (?, ?, ?, ?, ?)'
 
@@ -57,7 +65,7 @@ def store_complaints(parsed):
 
 schedule = IntervalSchedule(interval=datetime.timedelta(minutes=1))
 
-with Flow('my etl flow', schedule=schedule) as f:
+with Flow('my etl flow', state_handlers=[alert_failed]) as f:
     db_table = create_table()
     raw = get_complaint_data()
     parsed = parse_complaint_data(raw)
