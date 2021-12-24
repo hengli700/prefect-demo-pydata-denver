@@ -73,4 +73,4 @@ with Flow('my etl flow', state_handlers=[alert_failed]) as f:
     populated_table = store_complaints(parsed)
     populated_table.set_upstream(db_table)
 
-f.run()
+f.register(project_name='cfpb-complaints')
