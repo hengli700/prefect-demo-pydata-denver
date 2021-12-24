@@ -10,6 +10,7 @@ from prefect.tasks.database.sqlite import SQLiteScript
 from prefect.schedules import IntervalSchedule
 from prefect.engine import signals
 from prefect.engine.results.local_result import LocalResult
+import prefect
 
 
 # state handler
@@ -31,7 +32,9 @@ def get_complaint_data():
     r = requests.get('https://www.consumerfinance.gov/data-research/consumer-complaints/search/api/v1/',
                      params={'size': 100})
     response_json = json.loads(r.text)
-    print('I actually requested this!')
+    # print('I actually requested this!')
+    logger = prefect.context.get('logger')
+    logger.info('I actually requested this!')
     return response_json['hits']['hits']
 
 
