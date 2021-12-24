@@ -8,6 +8,7 @@ import datetime
 from prefect import task, Flow
 from prefect.tasks.database.sqlite import SQLiteScript
 from prefect.schedules import IntervalSchedule
+from prefect.engine import signals
 
 
 # state handler
@@ -36,7 +37,8 @@ def get_complaint_data():
 # transform
 @task(state_handlers=[alert_failed])
 def parse_complaint_data(raw):
-    raise Exception
+    # raise Exception
+    raise signals.FAIL
     complaints = []
     Complaint = namedtuple('Complaint', ['date_received', 'state', 'product', 'company', 'complaint_what_happened'])
     for row in raw:
